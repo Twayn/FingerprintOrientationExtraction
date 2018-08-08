@@ -33,22 +33,6 @@ namespace FPOrientField{
             _angle = pointAngle;
         }
 
-        public int Threshold(int[,] input){
-            var numbers = new List<int>();
-            
-            for (var y = 0; y < _rows; y++){
-                for (var x = 0; x < _columns; x++){
-                    if (!_foreground[y][x]) continue;
-                    var px = _border + x * _step;
-                    var py = _border + y * _step;
-                    numbers.Add(input[px,py]);
-                }
-            }
-            numbers.Sort();
-            
-            return numbers[numbers.Count/2];
-        }
-
         public int[,] CalcQualityMeasure(IQualityMeasure measure, int range){
             var result = new int[_module.GetLength(0), _module.GetLength(1)];
             
@@ -82,39 +66,54 @@ namespace FPOrientField{
                 var sumX = 0.0d;
                 var sumY = 0.0d;
 
-                var sumModules = 0.0d;
+                var modulesSum = 0.0d;
         
                 for (var w = x - range; w < x + range; w++) {
                     for (var z = y - range; z < y + range; z++) {
                         sumX += _module[w, z] * FastTrigon.FastCos[2 * _angle[w, z]];
                         sumY += _module[w, z] * FastTrigon.FastSin[2 * _angle[w, z]];
 
-                        sumModules += _module[w, z];
+                        modulesSum += _module[w, z];
                     }
                 }
                 
-                if (Math.Abs(sumModules) < 0.0001d) { 
-                    return 1; 
-                }
+                if (Math.Abs(modulesSum) < 0.0001d) return 1; 
+                
 
-                return (int) (Math.Sqrt(sumX * sumX + sumY * sumY) / sumModules * 1000);
+                return (int) (Math.Sqrt(sumX * sumX + sumY * sumY) / modulesSum * 1000);
             }
         }
         
         public class AverageModule : IQualityMeasure{
             public int CalculateInArea(int x, int y, int range){
-                var sumModules = 0;
-                var countMidules = 0;
+                var modulesSum = 0;
+                var modulesCount = 0;
                 
                 for (var w = x - range; w < x + range; w++) {
                     for (var z = y - range; z < y + range; z++){
-                        countMidules++;
-                        sumModules += _module[w, z];
+                        modulesCount++;
+                        modulesSum += _module[w, z];
                     }
                 }
                 
-                return sumModules/countMidules;
+                return modulesSum/modulesCount;
             }
+        }
+        
+        public int Threshold(int[,] input){
+            var numbers = new List<int>();
+            
+            for (var y = 0; y < _rows; y++){
+                for (var x = 0; x < _columns; x++){
+                    if (!_foreground[y][x]) continue;
+                    var px = _border + x * _step;
+                    var py = _border + y * _step;
+                    numbers.Add(input[px,py]);
+                }
+            }
+            numbers.Sort();
+            
+            return numbers[numbers.Count/2];
         }
         
         public class ComplexQuality : IQualityMeasure{

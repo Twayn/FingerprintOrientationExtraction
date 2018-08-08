@@ -24,7 +24,7 @@ namespace FPOrientField {
             LockBits();
         }
 
-        ~FastBitmap() { UnlockBits(); }
+        //~FastBitmap() { UnlockBits(); }
 
         private void LockBits() {
             Width = _source.Width;
