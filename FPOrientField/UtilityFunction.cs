@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace FPOrientField{
@@ -11,8 +12,8 @@ namespace FPOrientField{
         private static int[,] _areaModule;
         private static int[,] _areaAngle;
 
-//      private static int[,] _complex;
-//      private static int _threshold;
+        private static int[,] _complex;
+        private static int _threshold;
 
         public static void SetInitialData(string imagePath, Grid grid){
             var source = new FastBitmap(BitmapViewer.DoubleSize(imagePath));
@@ -51,26 +52,24 @@ namespace FPOrientField{
 //            BitmapViewer.Save(Grid.Layer5);
 //            BitmapViewer.Save(Grid.Layer6);
 
-//          _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
-//
-//          _threshold = grid.Threshold(_complex);
-//          BitmapViewer.Save(_complex);
-//          Console.WriteLine("T: " + _threshold);
-//
-//          BitmapViewer.Save(Grid.layer1);
-//          BitmapViewer.Save(Grid.layer2);
-//          BitmapViewer.Save(Grid.layer3);
-//          BitmapViewer.Save(Grid.layer4);
-//          BitmapViewer.Save(Grid.layer5);
-//          BitmapViewer.Save(Grid.layer6);
+          _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
+          _threshold = grid.Threshold(_complex);
+            
+          BitmapViewer.Save(_complex);
+          Console.WriteLine("T: " + _threshold);
+            //Aim:
+            //Create 2 two-dimensioanal arrays
+            //First - final results
+            //Second - quality measure
         }
 
-        public static byte GetDirectionAtPoint(int px, int py){
-//            if (complex[px, py] > threshold){
-            return AverageDirectionInArea(AllowedBorder, px, py);
-//            } else{
-//                return 127;
-//            }
+        public static byte GetDirectionAtPoint(int px, int py)
+        {
+            if (_complex[px, py] > _threshold){
+                return AverageDirectionInArea(AllowedBorder, px, py);
+            }
+
+            return 0;
         }
 
         private static void CalcDirectionAtArea(int area){

@@ -123,30 +123,23 @@ namespace FPOrientField{
                     Layer2[x, y],
                     Layer3[x, y]
                 };
-                double range1 = matrix1.Max() - matrix1.Min();
+                double range1 = matrix1.Max() - matrix1.Min();//TODO think about clever use
                 
                 int[] matrix2 = {
                     Layer4[x, y],
                     Layer5[x, y],
                     Layer6[x, y]
                 };
-                double range2 = matrix2.Max() - matrix2.Min();
+                double range2 = matrix2.Max() - matrix2.Min();//TODO think about clever use
+                  
+//                if (range1 < 1) range1 = 1;
+//              
+//                if (range2 < 1) range2 = 1;
+//                
+//                Console.WriteLine("R: " + range1);
+//                Console.WriteLine("R2: " + range2);
                 
-                range1 = range1 / 10.0d;
-                range2 = range2 / 10.0d;
-                
-                if (range1 < 1){
-                    range1 = 1;
-                }
-
-                if (range2 < 1){
-                    range2 = 1;
-                }
-                
-                //Console.WriteLine("R: " + range1);
-                //Console.WriteLine("R2: " + range2);
-                
-                Console.WriteLine("RR: " + Layer6[x,y] * Trigon.Sin(Layer3[x,y]/1000.0d*90.0d) / range1 /range2);
+                //Console.WriteLine("RR: " + Layer6[x,y] * Trigon.Sin(Layer3[x,y]/1000.0d*90.0d) / range1 /range2);
                 
                 return (int) (Layer6[x,y] * Trigon.Sin(Layer3[x,y]/1000.0d*90.0d));
             }
