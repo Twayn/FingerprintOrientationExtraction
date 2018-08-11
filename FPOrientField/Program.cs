@@ -105,7 +105,12 @@ namespace FPOrientField{
                             }
                         }
                         
-                        var interpolator = new Interpolator(orientations, UtilityFunctions.GetQualityMeasure(), foreground);
+                        var interpolator = new Interpolator(orientations, 
+                                                            UtilityFunctions.GetQualityMeasure(),
+                                                            UtilityFunctions.GetThreshold(),
+                                                            foreground, 
+                                                            fgRows, 
+                                                            fgColumns);
                         interpolator.Interpolate();
                         
                         Console.WriteLine(stopwatch.ElapsedMilliseconds);

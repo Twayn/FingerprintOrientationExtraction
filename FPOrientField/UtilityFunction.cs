@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace FPOrientField{
@@ -63,6 +62,10 @@ namespace FPOrientField{
 
         public static int[,] GetQualityMeasure(){
             return _qualityMeasure;
+        }
+        
+        public static int GetThreshold(){
+            return _threshold;
         }
 
         public static byte GetDirectionAtPoint(int px, int py)
