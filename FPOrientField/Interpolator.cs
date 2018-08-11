@@ -6,8 +6,8 @@ namespace FPOrientField
     {
         private readonly int[,] _qualityMeasure;
         private readonly byte[][] _orientations;
-        private readonly byte[][] _foreground;
-        public Interpolator(byte[][] orientations, int[,] qualityMeasure, byte[][] foreground)
+        private readonly bool[][] _foreground;
+        public Interpolator(byte[][] orientations, int[,] qualityMeasure, bool[][] foreground)
         {
             _orientations = orientations;
             _qualityMeasure = qualityMeasure;

@@ -67,11 +67,11 @@ namespace FPOrientField{
 
         public static byte GetDirectionAtPoint(int px, int py)
         {
-            if (_complex[px, py] > _threshold){
+            //if (_complex[px, py] > _threshold){
                 return AverageDirectionInArea(AllowedBorder, px, py);
-            }
+            //}
 
-            return 0;
+            //return 0;
         }
 
         private static void CalcDirectionAtArea(int area){
