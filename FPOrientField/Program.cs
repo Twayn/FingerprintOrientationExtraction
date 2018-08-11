@@ -91,9 +91,6 @@ namespace FPOrientField{
                         
                         var g = new Grid(foreground, fgRows, fgColumns, border, step);
                         UtilityFunctions.SetInitialData(imagePath, g);
-                       
-                        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-                        stopwatch.Stop();
                         
                         // extracts the orientations
                         var orientations = new byte[fgRows][];
@@ -107,6 +104,12 @@ namespace FPOrientField{
                                 orientations[y][x] = UtilityFunctions.GetDirectionAtPoint(px, py);
                             }
                         }
+                        
+                        var interpolator = new Interpolator(orientations, UtilityFunctions.GetQualityMeasure(), foreground);
+                        interpolator.Interpolate();
+                        
+                        Console.WriteLine(stopwatch.ElapsedMilliseconds);
+                        stopwatch.Stop();
         
                         // Saves the result
                         var filename = Path.GetFileNameWithoutExtension(imagePath);

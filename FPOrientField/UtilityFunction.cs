@@ -15,6 +15,8 @@ namespace FPOrientField{
         private static int[,] _complex;
         private static int _threshold;
 
+        private static int[,] _qualityMeasure;
+
         public static void SetInitialData(string imagePath, Grid grid){
             var source = new FastBitmap(BitmapViewer.DoubleSize(imagePath));
             var sourceArray = source.GetIntArray();
@@ -56,11 +58,11 @@ namespace FPOrientField{
           _threshold = grid.Threshold(_complex);
             
           BitmapViewer.Save(_complex);
-          Console.WriteLine("T: " + _threshold);
-            //Aim:
-            //Create 2 two-dimensioanal arrays
-            //First - final results
-            //Second - quality measure
+          _qualityMeasure = grid.CalcQualityMeasureOriginalSize(new Grid.ComplexQuality(), 0);
+        }
+
+        public static int[,] GetQualityMeasure(){
+            return _qualityMeasure;
         }
 
         public static byte GetDirectionAtPoint(int px, int py)

@@ -48,6 +48,22 @@ namespace FPOrientField{
 
             return result;
         }
+        
+        public int[,] CalcQualityMeasureOriginalSize(IQualityMeasure measure, int range){
+            var result = new int[_columns, _rows];
+            
+            for (var x = 0; x < _columns; x++){
+                for (var y = 0; y < _rows; y++){
+                    if (!_foreground[y][x]) continue;
+                    var px = _border + x * _step;
+                    var py = _border + y * _step;
+                    result[x, y] = measure.CalculateInArea(px, py, range);
+                }
+            }
+
+            return result;
+        }
+
 
         private static void FillAreaNearPixel(int[,] toFill, int x, int y, int range){
             for (var w = x - range; w < x + range; w++) {
