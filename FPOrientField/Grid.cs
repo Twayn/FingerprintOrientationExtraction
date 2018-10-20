@@ -129,7 +129,7 @@ namespace FPOrientField{
             }
             numbers.Sort();
             
-            return numbers[numbers.Count/2];
+            return numbers[numbers.Count/4*3];
         }
         
         public class ComplexQuality : IQualityMeasure{

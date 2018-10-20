@@ -56,7 +56,7 @@ namespace FPOrientField{
           _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
           _threshold = grid.Threshold(_complex);
             
-          BitmapViewer.Save(_complex);
+          //BitmapViewer.Save(_complex);
           _qualityMeasure = grid.CalcQualityMeasureOriginalSize(new Grid.ComplexQuality(), 0);
         }
 

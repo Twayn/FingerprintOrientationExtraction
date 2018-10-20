@@ -23,35 +23,77 @@ namespace FPOrientField{
             _columns = columns;
         }
 
-        /*
-         *TODO
-         * iterate over orientations
-         * if there is a good quality item near bad quality item
-         * correct bad quality item.
-         */
         public void Interpolate(){
-            BitmapViewer.Save(_qualityMeasure);
-//            Console.WriteLine(_qualityMeasure.GetLength(0));
-//            Console.WriteLine(_qualityMeasure.GetLength(1));
-//            Console.WriteLine(_orientations.GetLength(0));
-//            Console.WriteLine(_orientations[0].GetLength(0));
+            //BitmapViewer.Save(_qualityMeasure);
+            while (InterpolateStep()){ }
+            while (InterpolateStep3()){ }
+            temp();
+        }
 
-            test(25, 30);
-            return;
-            
+        private bool InterpolateStep(){
+            var interpolationHappens = false;
             for (var y = 1; y < _rows-1; y++){
                 for (var x = 1; x < _columns-1; x++){
                     if (!_foreground[y][x]) continue;
 
                     if (_qualityMeasure[x, y] < _threshold && HasGoodNeighbor(x, y)){
-                        _orientations[y][x] = 127;
+                        var estimation = Average3X3(x, y);
+                        var existing = _orientations[y][x];
+                        
+                        if (a(existing, estimation)){
+                            _qualityMeasure[x, y] = _threshold + 1;
+                            interpolationHappens = true;
+                        }
+                    } 
+                }
+            }
+
+            return interpolationHappens;
+        }
+                
+        private bool InterpolateStep3(){
+            var interpolationHappens = false;
+            for (var y = 1; y < _rows-1; y++){
+                for (var x = 1; x < _columns-1; x++){
+                    if (!_foreground[y][x]) continue;
+
+                    if (_qualityMeasure[x, y] < _threshold && HasGoodNeighbor(x, y)){
+                        var estimation = Average3X3(x, y);
+                        var existing = _orientations[y][x];
+                        
+                        if (HasGoodCoherentNeigbor(existing, x, y)){
+                            _qualityMeasure[x, y] = _threshold + 1;
+                            interpolationHappens = true;
+                        }
+                    } 
+                }
+            }
+
+            return interpolationHappens;
+        }
+
+        void temp(){
+            for (var y = 1; y < _rows-1; y++){
+                for (var x = 1; x < _columns-1; x++){
+                    if (!_foreground[y][x]) continue;
+
+                    if (_qualityMeasure[x, y] < _threshold){    
+                        var estimation = Average3X3(x, y);
+                        var existing = _orientations[y][x];
+                        Console.WriteLine(Math.Abs(existing-estimation));
+                        _orientations[y][x] = estimation;
                     }
                 }
             }
         }
 
-        private bool IsBad(int val){
-            return val < _threshold;
+        private bool a(int existing, int estimation){
+            var abs = Math.Abs(estimation - existing);
+            return abs < 15 || abs > 240;
+        }
+                
+        private int IsGoodInt(int val){
+            return val >= _threshold ? 1 : 0;
         }
         
         private bool IsGood(int val){
@@ -60,72 +102,89 @@ namespace FPOrientField{
 
         private bool HasGoodNeighbor(int x, int y){
             return
-                IsGood(_qualityMeasure[x - 1, y - 1]) ||
-                IsGood(_qualityMeasure[x - 1, y])     ||
-                IsGood(_qualityMeasure[x - 1, y + 1]) ||
-                IsGood(_qualityMeasure[x, y - 1])     ||
-                IsGood(_qualityMeasure[x, y + 1])     ||
-                IsGood(_qualityMeasure[x + 1, y - 1]) ||
-                IsGood(_qualityMeasure[x + 1, y])     ||
-                IsGood(_qualityMeasure[x + 1, y + 1]);
+                IsGoodInt(_qualityMeasure[x - 1, y - 1]) +
+                IsGoodInt(_qualityMeasure[x - 1, y]) +
+                IsGoodInt(_qualityMeasure[x - 1, y + 1]) +
+                IsGoodInt(_qualityMeasure[x, y - 1]) +
+                IsGoodInt(_qualityMeasure[x, y + 1]) +
+                IsGoodInt(_qualityMeasure[x + 1, y - 1]) +
+                IsGoodInt(_qualityMeasure[x + 1, y]) +
+                IsGoodInt(_qualityMeasure[x + 1, y + 1]) > 1;
         }
         
-        private bool HasBadNeighbor(int x, int y){
-            return
-                IsBad(_qualityMeasure[x - 1, y - 1]) ||
-                IsBad(_qualityMeasure[x - 1, y])     ||
-                IsBad(_qualityMeasure[x - 1, y + 1]) ||
-                IsBad(_qualityMeasure[x, y - 1])     ||
-                IsBad(_qualityMeasure[x, y + 1])     ||
-                IsBad(_qualityMeasure[x + 1, y - 1]) ||
-                IsBad(_qualityMeasure[x + 1, y])     ||
-                IsBad(_qualityMeasure[x + 1, y + 1]);
-        }
-        
-        private int test(int x, int y){
+        private byte Average3X3(int x, int y){
             var sumX = 0.0d;
             var sumY = 0.0d;
-            
-            sumX += SumX(_orientations[y - 1][x - 1]);
-            sumY += SumY(_orientations[y - 1][x - 1]);
-            
-            sumX += SumX(_orientations[y][x - 1]);
-            sumY += SumY(_orientations[y][x - 1]);
-            
-            sumX += SumX(_orientations[y + 1][x - 1]);
-            sumY += SumY(_orientations[y + 1][x - 1]);
-            
-            sumX += SumX(_orientations[y - 1][x]);
-            sumY += SumY(_orientations[y - 1][x]);
-            
-            sumX += SumX(_orientations[y + 1][x]);
-            sumY += SumY(_orientations[y + 1][x]);
-            
-            sumX += SumX(_orientations[y - 1][x + 1]);
-            sumY += SumY(_orientations[y - 1][x + 1]);
-            
-            sumX += SumX(_orientations[y][x + 1]);
-            sumY += SumY(_orientations[y][x + 1]);
-            
-            sumX += SumX(_orientations[y + 1][x + 1]);
-            sumY += SumY(_orientations[y + 1][x + 1]);
 
+            if (IsGood(_qualityMeasure[x - 1, y - 1])){
+                sumX += SumX(_orientations[y - 1][x - 1]);
+                sumY += SumY(_orientations[y - 1][x - 1]);
+            }
+            
+            if (IsGood(_qualityMeasure[x - 1, y])){
+                sumX += SumX(_orientations[y][x - 1]);
+                sumY += SumY(_orientations[y][x - 1]);
+            }
+            
+            if (IsGood(_qualityMeasure[x - 1, y + 1])){
+                sumX += SumX(_orientations[y + 1][x - 1]);
+                sumY += SumY(_orientations[y + 1][x - 1]);
+            }
+            
+            if (IsGood(_qualityMeasure[x, y - 1])){
+                sumX += SumX(_orientations[y - 1][x]);
+                sumY += SumY(_orientations[y - 1][x]);
+            }
+            
+            if (IsGood(_qualityMeasure[x, y + 1])){
+                sumX += SumX(_orientations[y + 1][x]);
+                sumY += SumY(_orientations[y + 1][x]);
+            }
+            
+            if (IsGood(_qualityMeasure[x + 1, y - 1])){
+                sumX += SumX(_orientations[y - 1][x + 1]);
+                sumY += SumY(_orientations[y - 1][x + 1]);
+            }
+            
+            if (IsGood(_qualityMeasure[x + 1, y])){
+                sumX += SumX(_orientations[y][x + 1]);
+                sumY += SumY(_orientations[y][x + 1]);
+            }
+            
+            if (IsGood(_qualityMeasure[x + 1, y + 1])){
+                sumX += SumX(_orientations[y + 1][x + 1]);
+                sumY += SumY(_orientations[y + 1][x + 1]);
+            }
+            
             var res = (int) (Trigon.AtanDouble(sumY, sumX) / 2.0d);
             
-            Console.WriteLine("RR: " + res*1.42222d);
-            return res;
+            return ToStored(res);
         }
         
-        private double SumX(byte angle){
-            Console.WriteLine("R: " + angle);
-            return 1 * FastTrigon.FastCos[2 * normalize(angle)];
-        }
-        
-        private double SumY(byte angle){
-            return 1 * FastTrigon.FastSin[2 * normalize(angle)];
+        private bool HasGoodCoherentNeigbor(byte angle, int x, int y){
+            return (IsGood(_qualityMeasure[x - 1, y - 1]) &&  a(angle, _orientations[y - 1][x - 1])) ||
+                   (IsGood(_qualityMeasure[x - 1, y])     &&  a(angle, _orientations[y][x - 1]))     ||
+                   (IsGood(_qualityMeasure[x - 1, y + 1]) &&  a(angle, _orientations[y + 1][x - 1])) ||
+                   (IsGood(_qualityMeasure[x, y - 1])     &&  a(angle, _orientations[y - 1][x]))     ||
+                   (IsGood(_qualityMeasure[x, y + 1])     &&  a(angle, _orientations[y + 1][x]))     ||
+                   (IsGood(_qualityMeasure[x + 1, y - 1]) &&  a(angle, _orientations[y - 1][x + 1])) ||
+                   (IsGood(_qualityMeasure[x + 1, y])     &&  a(angle, _orientations[y][x + 1]))     ||
+                   (IsGood(_qualityMeasure[x + 1, y + 1]) &&  a(angle, _orientations[y + 1][x + 1]));
         }
 
-        private int normalize(byte angle){
+        private static byte ToStored(int res){
+            return (byte)(res * 1.42222d);
+        }
+
+        private static double SumX(byte angle){
+            return 1 * FastTrigon.FastCos[2 * Normalize(angle)];
+        }
+        
+        private static double SumY(byte angle){
+            return 1 * FastTrigon.FastSin[2 * Normalize(angle)];
+        }
+
+        private static int Normalize(byte angle){
             var buf = angle / 1.42222d;
             return (int) buf;
         }
