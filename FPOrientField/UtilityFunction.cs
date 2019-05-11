@@ -11,12 +11,15 @@ namespace FPOrientField{
         private static int[,] _areaModule;
         private static int[,] _areaAngle;
 
-        private static int[,] _complex;
-        private static int _threshold;
-
-        private static int[,] _qualityMeasure;
+//        private static int[,] _complex;
+//        private static int _threshold;
+//
+//        private static int[,] _qualityMeasure;
+//        
 
         public static void SetInitialData(string imagePath, Grid grid){
+            var verySource = new FastBitmap(imagePath);
+            
             var source = new FastBitmap(BitmapViewer.DoubleSize(imagePath));
             var sourceArray = source.GetIntArray();
 
@@ -32,10 +35,12 @@ namespace FPOrientField{
             CalcGradientAtPoint(blured);
             CalcDirectionAtArea(AllowedBorder);
 
-          BitmapViewer.Save(blured);
-          BitmapViewer.Save(_pointAngle);
-          BitmapViewer.Save(_pointModule);
-          BitmapViewer.Save(_areaAngle);
+            BitmapViewer.Save(verySource.GetIntArray());
+            BitmapViewer.Save(source.GetIntArray());
+            BitmapViewer.Save(blured);
+            BitmapViewer.Save(_pointAngle);
+            BitmapViewer.Save(_pointModule);
+            BitmapViewer.Save(_areaAngle);
 
             Grid.SetGradientElements(_pointModule, _pointAngle);
 
@@ -47,33 +52,33 @@ namespace FPOrientField{
             Grid.Layer6 = grid.CalcQualityMeasure(new Grid.AverageModule(), 10);
             Grid.Layer7 = grid.CalcQualityMeasure(new Grid.AverageModule(), 12);
             Grid.Layer8 = grid.CalcQualityMeasure(new Grid.AverageModule(), 14);
-                 
-            BitmapViewer.Save(Grid.Layer1);
-            BitmapViewer.Save(Grid.Layer2);
-            BitmapViewer.Save(Grid.Layer3);
-            BitmapViewer.Save(Grid.Layer4);
-            BitmapViewer.Save(Grid.Layer5);
-            BitmapViewer.Save(Grid.Layer6);
-            BitmapViewer.Save(Grid.Layer7);
-            BitmapViewer.Save(Grid.Layer8);
-            
-            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.CoherenceDiff(), 0));
-            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.ModuleDiff(), 0));
+//                 
+//            BitmapViewer.Save(Grid.Layer1);
+//            BitmapViewer.Save(Grid.Layer2);
+//            BitmapViewer.Save(Grid.Layer3);
+//            BitmapViewer.Save(Grid.Layer4);
+//            BitmapViewer.Save(Grid.Layer5);
+//            BitmapViewer.Save(Grid.Layer6);
+//            BitmapViewer.Save(Grid.Layer7);
+//            BitmapViewer.Save(Grid.Layer8);
+//            
+//            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.CoherenceDiff(), 0));
+//            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.ModuleDiff(), 0));
 
-          _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
-          _threshold = grid.Threshold(_complex);
+//          _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
+//          _threshold = grid.Threshold(_complex);
             
           //BitmapViewer.Save(_complex);
-          _qualityMeasure = grid.CalcQualityMeasureOriginalSize(new Grid.ComplexQuality(), 0);
+//          _qualityMeasure = grid.CalcQualityMeasureOriginalSize(new Grid.ComplexQuality(), 0);
         }
 
-        public static int[,] GetQualityMeasure(){
-            return _qualityMeasure;
-        }
-        
-        public static int GetThreshold(){
-            return _threshold;
-        }
+//        public static int[,] GetQualityMeasure(){
+//            return _qualityMeasure;
+//        }
+//        
+//        public static int GetThreshold(){
+//            return _threshold;
+//        }
 
         public static byte GetDirectionAtPoint(int px, int py){
                 return AverageDirectionInArea(AllowedBorder, px, py);
