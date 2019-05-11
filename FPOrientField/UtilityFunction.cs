@@ -32,26 +32,33 @@ namespace FPOrientField{
             CalcGradientAtPoint(blured);
             CalcDirectionAtArea(AllowedBorder);
 
-//          BitmapViewer.save(blured);
-//          BitmapViewer.save(_pointAngle);
-//          BitmapViewer.save(_pointModule);
-//          BitmapViewer.save(_areaAngle);
+          BitmapViewer.Save(blured);
+          BitmapViewer.Save(_pointAngle);
+          BitmapViewer.Save(_pointModule);
+          BitmapViewer.Save(_areaAngle);
 
             Grid.SetGradientElements(_pointModule, _pointAngle);
 
-            Grid.Layer1 = grid.CalcQualityMeasure(new Grid.Coherence(), 10);
-            Grid.Layer2 = grid.CalcQualityMeasure(new Grid.Coherence(), 12);
-            Grid.Layer3 = grid.CalcQualityMeasure(new Grid.Coherence(), 14);
-            Grid.Layer4 = grid.CalcQualityMeasure(new Grid.AverageModule(), 10);
-            Grid.Layer5 = grid.CalcQualityMeasure(new Grid.AverageModule(), 12);
-            Grid.Layer6 = grid.CalcQualityMeasure(new Grid.AverageModule(), 14);
+            Grid.Layer1 = grid.CalcQualityMeasure(new Grid.Coherence(), 8);
+            Grid.Layer2 = grid.CalcQualityMeasure(new Grid.Coherence(), 10);
+            Grid.Layer3 = grid.CalcQualityMeasure(new Grid.Coherence(), 12);
+            Grid.Layer4 = grid.CalcQualityMeasure(new Grid.Coherence(), 14);
+            Grid.Layer5 = grid.CalcQualityMeasure(new Grid.AverageModule(), 8);
+            Grid.Layer6 = grid.CalcQualityMeasure(new Grid.AverageModule(), 10);
+            Grid.Layer7 = grid.CalcQualityMeasure(new Grid.AverageModule(), 12);
+            Grid.Layer8 = grid.CalcQualityMeasure(new Grid.AverageModule(), 14);
+                 
+            BitmapViewer.Save(Grid.Layer1);
+            BitmapViewer.Save(Grid.Layer2);
+            BitmapViewer.Save(Grid.Layer3);
+            BitmapViewer.Save(Grid.Layer4);
+            BitmapViewer.Save(Grid.Layer5);
+            BitmapViewer.Save(Grid.Layer6);
+            BitmapViewer.Save(Grid.Layer7);
+            BitmapViewer.Save(Grid.Layer8);
             
-//            BitmapViewer.Save(Grid.Layer1);
-//            BitmapViewer.Save(Grid.Layer2);
-//            BitmapViewer.Save(Grid.Layer3);
-//            BitmapViewer.Save(Grid.Layer4);
-//            BitmapViewer.Save(Grid.Layer5);
-//            BitmapViewer.Save(Grid.Layer6);
+            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.CoherenceDiff(), 0));
+            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.ModuleDiff(), 0));
 
           _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
           _threshold = grid.Threshold(_complex);
