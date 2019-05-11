@@ -19,6 +19,8 @@ namespace FPOrientField{
         public static int[,] Layer4;
         public static int[,] Layer5;
         public static int[,] Layer6;
+        public static int[,] Layer7;
+        public static int[,] Layer8;
 
         public Grid(bool[][] foreground, int rows, int columns, int border, int step){
             _foreground = foreground;
@@ -113,6 +115,30 @@ namespace FPOrientField{
                 }
                 
                 return modulesSum/modulesCount;
+            }
+        }
+        
+        public class CoherenceDiff : IQualityMeasure{
+            public int CalculateInArea(int x, int y, int range){
+                int[] matrix = {
+                    Layer1[x, y],
+                    Layer2[x, y],
+                    Layer3[x, y],
+                    Layer4[x, y]
+                };
+                return matrix.Max() - matrix.Min();
+            }
+        }
+        
+        public class ModuleDiff : IQualityMeasure{
+            public int CalculateInArea(int x, int y, int range){
+                int[] matrix = {
+                    Layer5[x, y],
+                    Layer6[x, y],
+                    Layer7[x, y],
+                    Layer8[x, y]
+                };
+                return matrix.Max() - matrix.Min();
             }
         }
         
