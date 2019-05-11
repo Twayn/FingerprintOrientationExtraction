@@ -23,11 +23,25 @@ namespace FPOrientField{
             _columns = columns;
         }
 
-        public void Interpolate(){
+        public void Interpolate(){//При step 3 отдавать предпочтение к тем, что ближе к уже определенному значению.
             //BitmapViewer.Save(_qualityMeasure);
-            while (InterpolateStep()){ }
-            while (InterpolateStep3()){ }
-            temp();
+            //while (InterpolateStep()){ }
+            //while (InterpolateStep2()){ }
+            //InterpolateStep3();
+            //nullify();
+        }
+
+        void nullify(){
+            for (var y = 1; y < _rows-1; y++){
+                for (var x = 1; x < _columns-1; x++){
+                    if (!_foreground[y][x]) continue;
+
+                    if (_qualityMeasure[x, y] < _threshold){    
+                        _orientations[y][x] = 127;
+                        _qualityMeasure[x, y] = _threshold + 1;
+                    }
+                }
+            }
         }
 
         private bool InterpolateStep(){
@@ -40,7 +54,7 @@ namespace FPOrientField{
                         var estimation = Average3X3(x, y);
                         var existing = _orientations[y][x];
                         
-                        if (a(existing, estimation)){
+                        if (DifferenceLessThan15(existing, estimation)){
                             _qualityMeasure[x, y] = _threshold + 1;
                             interpolationHappens = true;
                         }
@@ -51,14 +65,13 @@ namespace FPOrientField{
             return interpolationHappens;
         }
                 
-        private bool InterpolateStep3(){
+        private bool InterpolateStep2(){
             var interpolationHappens = false;
             for (var y = 1; y < _rows-1; y++){
                 for (var x = 1; x < _columns-1; x++){
                     if (!_foreground[y][x]) continue;
 
                     if (_qualityMeasure[x, y] < _threshold && HasGoodNeighbor(x, y)){
-                        var estimation = Average3X3(x, y);
                         var existing = _orientations[y][x];
                         
                         if (HasGoodCoherentNeigbor(existing, x, y)){
@@ -72,24 +85,28 @@ namespace FPOrientField{
             return interpolationHappens;
         }
 
-        void temp(){
+        private bool InterpolateStep3(){
+            var interpolationHappens = false;
             for (var y = 1; y < _rows-1; y++){
                 for (var x = 1; x < _columns-1; x++){
                     if (!_foreground[y][x]) continue;
 
-                    if (_qualityMeasure[x, y] < _threshold){    
+                    if (_qualityMeasure[x, y] < _threshold && HasGoodNeighbor(x, y)){    
                         var estimation = Average3X3(x, y);
-                        var existing = _orientations[y][x];
-                        Console.WriteLine(Math.Abs(existing-estimation));
+                        Console.WriteLine(Math.Abs(estimation));
                         _orientations[y][x] = estimation;
+                        _qualityMeasure[x, y] = _threshold + 1;
+                        interpolationHappens = true;
                     }
                 }
             }
+            
+            return interpolationHappens;
         }
 
-        private bool a(int existing, int estimation){
+        private static bool DifferenceLessThan15(int existing, int estimation){
             var abs = Math.Abs(estimation - existing);
-            return abs < 15 || abs > 240;
+            return abs < 13 || abs > 242;
         }
                 
         private int IsGoodInt(int val){
@@ -162,14 +179,14 @@ namespace FPOrientField{
         }
         
         private bool HasGoodCoherentNeigbor(byte angle, int x, int y){
-            return (IsGood(_qualityMeasure[x - 1, y - 1]) &&  a(angle, _orientations[y - 1][x - 1])) ||
-                   (IsGood(_qualityMeasure[x - 1, y])     &&  a(angle, _orientations[y][x - 1]))     ||
-                   (IsGood(_qualityMeasure[x - 1, y + 1]) &&  a(angle, _orientations[y + 1][x - 1])) ||
-                   (IsGood(_qualityMeasure[x, y - 1])     &&  a(angle, _orientations[y - 1][x]))     ||
-                   (IsGood(_qualityMeasure[x, y + 1])     &&  a(angle, _orientations[y + 1][x]))     ||
-                   (IsGood(_qualityMeasure[x + 1, y - 1]) &&  a(angle, _orientations[y - 1][x + 1])) ||
-                   (IsGood(_qualityMeasure[x + 1, y])     &&  a(angle, _orientations[y][x + 1]))     ||
-                   (IsGood(_qualityMeasure[x + 1, y + 1]) &&  a(angle, _orientations[y + 1][x + 1]));
+            return (IsGood(_qualityMeasure[x - 1, y - 1]) &&  DifferenceLessThan15(angle, _orientations[y - 1][x - 1])) ||
+                   (IsGood(_qualityMeasure[x - 1, y])     &&  DifferenceLessThan15(angle, _orientations[y][x - 1]))     ||
+                   (IsGood(_qualityMeasure[x - 1, y + 1]) &&  DifferenceLessThan15(angle, _orientations[y + 1][x - 1])) ||
+                   (IsGood(_qualityMeasure[x, y - 1])     &&  DifferenceLessThan15(angle, _orientations[y - 1][x]))     ||
+                   (IsGood(_qualityMeasure[x, y + 1])     &&  DifferenceLessThan15(angle, _orientations[y + 1][x]))     ||
+                   (IsGood(_qualityMeasure[x + 1, y - 1]) &&  DifferenceLessThan15(angle, _orientations[y - 1][x + 1])) ||
+                   (IsGood(_qualityMeasure[x + 1, y])     &&  DifferenceLessThan15(angle, _orientations[y][x + 1]))     ||
+                   (IsGood(_qualityMeasure[x + 1, y + 1]) &&  DifferenceLessThan15(angle, _orientations[y + 1][x + 1]));
         }
 
         private static byte ToStored(int res){
