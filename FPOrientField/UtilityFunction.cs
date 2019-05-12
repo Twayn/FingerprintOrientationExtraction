@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Threading.Tasks;
 
 namespace FPOrientField{
@@ -41,6 +43,8 @@ namespace FPOrientField{
             BitmapViewer.Save(_pointAngle);
             BitmapViewer.Save(_pointModule);
             BitmapViewer.Save(_areaAngle);
+            
+            BitmapViewer.Save(BlurAlongRidgeDirection(verySource.GetIntArray(), 10, 8));
 
             Grid.SetGradientElements(_pointModule, _pointAngle);
 
@@ -181,6 +185,85 @@ namespace FPOrientField{
             if (storedAngle > 255.0d) storedAngle = storedAngle - 255.0d;
 
             return Convert.ToByte(storedAngle);
+        }
+
+        private static int CorrectAngle(int angle){
+            if (angle == 90) return 180;
+            if (angle > 90) return 180 - (angle - 90);
+            if (angle < 90) return 90 - angle;
+            throw new Exception("ooopsie");
+        }
+
+        private static int[,] BlurAlongRidgeDirection(int[,] forBlur, int border, int lineLength){
+            var result = new int[forBlur.GetLength(0), forBlur.GetLength(1)];
+
+            Parallel.For(border, forBlur.GetLength(0) - border, x => {
+                for (var y = border; y < forBlur.GetLength(1) - border; y++){  
+                    var lineCoordinates = GetLineCoordinates(x, y, CorrectAngle(_areaAngle[x, y]), lineLength);
+                    var sum = 0;
+
+                    foreach (var c in lineCoordinates){
+                        sum += forBlur[c.GetX(), c.GetY()];
+                    }
+
+                    result[x, y] = sum/lineCoordinates.Count;
+                }
+            });
+
+            
+            return result;
+        }
+        
+        private static List<Coord> GetLineCoordinates(int x, int y, int angle, int lineLength) {
+            List<Coord> lineCoordinates;
+
+            var stopFlag = true;
+            var length = lineLength;
+
+            do{
+                lineCoordinates = GetSimpleLineCoordinates(x, y, angle, length);
+                if (lineCoordinates.Count >= lineLength) { stopFlag = false; }
+                length++;
+            } while(stopFlag);
+          
+            return lineCoordinates;
+        }
+
+        private static List<Coord> GetSimpleLineCoordinates(int x, int y, int angle, int lineLength) {
+            return GetLine(Convert.ToInt32(x + FastTrigon.FastCos[angle] * lineLength / 2),
+                           Convert.ToInt32(y + FastTrigon.FastSin[angle] * lineLength / 2),
+                           Convert.ToInt32(x + FastTrigon.FastCos[angle + 180] * lineLength / 2),
+                           Convert.ToInt32(y + FastTrigon.FastSin[angle + 180] * lineLength / 2));
+        }
+        
+        //Bresenham's line algorithm
+        private static List<Coord> GetLine(int x1, int y1, int x2, int y2) {
+            var coordinates = new List<Coord>();
+
+            var deltaX = Math.Abs(x2 - x1);
+            var deltaY = Math.Abs(y2 - y1);
+            var signX = x1 < x2 ? 1 : -1;
+            var signY = y1 < y2 ? 1 : -1;
+            
+            var error = deltaX - deltaY;
+ 
+            while(x1 != x2 || y1 != y2) {
+                coordinates.Add(new Coord(x1, y1));
+
+                var error2 = error * 2;
+                
+                if(error2 > -deltaY) {
+                    error -= deltaY;
+                    x1 += signX;
+                }
+                if(error2 < deltaX) {
+                    error += deltaX;
+                    y1 += signY;
+                }
+            }
+            coordinates.Add(new Coord(x2, y2));
+
+            return coordinates;
         }
     }
 }

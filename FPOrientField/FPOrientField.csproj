@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitmapViewer.cs" />
+    <Compile Include="Coord.cs" />
     <Compile Include="FastBitmap.cs" />
     <Compile Include="FastTrigon.cs" />
     <Compile Include="Grid.cs" />
