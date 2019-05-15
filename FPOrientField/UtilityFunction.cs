@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace FPOrientField{
@@ -17,9 +18,11 @@ namespace FPOrientField{
 //        private static int _threshold;
 //
 //        private static int[,] _qualityMeasure;
-//        
 
-        public static void SetInitialData(string imagePath, Grid grid){
+
+        private static System.IO.StreamWriter _res;  
+
+        public static void SetInitialData(string imagePath, Grid grid, System.IO.StreamWriter res){
             var verySource = new FastBitmap(imagePath);
             
             var source = new FastBitmap(BitmapViewer.DoubleSize(imagePath));
@@ -43,8 +46,14 @@ namespace FPOrientField{
             BitmapViewer.Save(_pointAngle);
             BitmapViewer.Save(_pointModule);
             BitmapViewer.Save(_areaAngle);
+
+            _res = res;
             
-            BitmapViewer.Save(BlurAlongRidgeDirection(verySource.GetIntArray(), 10, 8));
+            var bluredAlongRidgeDirection = BlurAlongRidgeDirection(verySource.GetIntArray(), 16, 8);
+            
+            BitmapViewer.Save(bluredAlongRidgeDirection);
+            
+            FFT(bluredAlongRidgeDirection, 8, 16);
 
             Grid.SetGradientElements(_pointModule, _pointAngle);
 
@@ -188,10 +197,12 @@ namespace FPOrientField{
         }
 
         private static int CorrectAngle(int angle){
-            if (angle == 90) return 180;
-            if (angle > 90) return 180 - (angle - 90);
-            if (angle < 90) return 90 - angle;
-            throw new Exception("ooopsie");
+            if (angle >= 90) return 180 - (angle - 90);
+            else return 90 - angle;
+        }
+        
+        private static int Rotate90(int angle){
+            return angle < 90 ? angle + 90 : angle - 90;
         }
 
         private static int[,] BlurAlongRidgeDirection(int[,] forBlur, int border, int lineLength){
@@ -214,6 +225,36 @@ namespace FPOrientField{
             return result;
         }
         
+        private static void FFT(int[,] forTransform, int border, int lineLength){
+            for (var x = border; x < forTransform.GetLength(0) - border; x ++){
+                for (var y = border; y < forTransform.GetLength(1) - border; y ++){
+                    var lineCoordinates = GetLineCoordinates(x, y, Rotate90(CorrectAngle(_areaAngle[x, y])), lineLength);
+                                        
+                    var complexes = new Complex[lineCoordinates.Count];
+                    
+                    for (var i = 0; i < lineCoordinates.Count; i++){
+                        var c = lineCoordinates[i];
+                        complexes[i] = new Complex(forTransform[c.GetX(), c.GetY()], 0); 
+                    }
+                    
+                    _res.WriteLine("\nX: " + x + " Y: " + y + ". Brightness:");
+
+                    foreach (var c in complexes){
+                        _res.Write(c.Re + ", ");
+                    }
+
+                    FourierTransform.FFT(complexes, FourierTransform.Direction.Forward);
+                    
+                    _res.WriteLine("\nFFT:");
+                    
+                    foreach (var c in complexes){
+                        _res.Write(string.Format("{0:0.00}", c.Re) + ", ");
+                    }
+                    _res.WriteLine("\n------------------------------------------------");
+                }
+            }
+        }
+        
         private static List<Coord> GetLineCoordinates(int x, int y, int angle, int lineLength) {
             List<Coord> lineCoordinates;
 
@@ -226,7 +267,7 @@ namespace FPOrientField{
                 length++;
             } while(stopFlag);
           
-            return lineCoordinates;
+            return lineCoordinates.GetRange(0, lineLength);
         }
 
         private static List<Coord> GetSimpleLineCoordinates(int x, int y, int angle, int lineLength) {

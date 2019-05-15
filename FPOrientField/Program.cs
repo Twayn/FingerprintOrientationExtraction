@@ -90,7 +90,10 @@ namespace FPOrientField{
                         stopwatch.Start();
                         
                         var g = new Grid(foreground, fgRows, fgColumns, border, step);
-                        UtilityFunctions.SetInitialData(imagePath, g);
+                        
+                        var res = new System.IO.StreamWriter(@"Img " + imagePath + ".txt");
+                        
+                        UtilityFunctions.SetInitialData(imagePath, g, res);
                         
                         // extracts the orientations
                         var orientations = new byte[fgRows][];
