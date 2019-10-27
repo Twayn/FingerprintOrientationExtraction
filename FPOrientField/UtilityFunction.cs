@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -14,46 +15,41 @@ namespace FPOrientField{
         private static int[,] _areaModule;
         private static int[,] _areaAngle;
 
-//        private static int[,] _complex;
+        private static int[,] _complex;
 //        private static int _threshold;
 //
 //        private static int[,] _qualityMeasure;
 
+        public static void SetInitialData(string imagePath, Grid grid, System.IO.StreamWriter res){            
+            var interpolated = new FastBitmap(BitmapViewer.DoubleSize(imagePath));
+            var interpolatedArray = interpolated.GetIntArray();
+            var interpolatedBlured = BlurInterpolated(interpolatedArray, 2);
 
-        private static System.IO.StreamWriter _res;  
-
-        public static void SetInitialData(string imagePath, Grid grid, System.IO.StreamWriter res){
-            var verySource = new FastBitmap(imagePath);
-            
-            var source = new FastBitmap(BitmapViewer.DoubleSize(imagePath));
+            var source = new FastBitmap(imagePath);
             var sourceArray = source.GetIntArray();
+            var sourceBlured = Blur(sourceArray, 2);
 
-            var w = source.Width / 2;
-            var h = source.Height / 2;
+            _pointModule = new int[source.Width, source.Height];
+            _pointAngle = new int[source.Width, source.Height];
+            _areaAngle = new int[source.Width, source.Height];
+            _areaModule = new int[source.Width, source.Height];
 
-            _pointModule = new int[w, h];
-            _pointAngle = new int[w, h];
-            _areaAngle = new int[w, h];
-            _areaModule = new int[w, h];
-
-            var blured = BlurInterpolated(sourceArray, 2);
-            CalcGradientAtPoint(blured);
+            CalcGradientAtPoint(interpolatedBlured);
             CalcDirectionAtArea(AllowedBorder);
 
-            BitmapViewer.Save(verySource.GetIntArray());
-            BitmapViewer.Save(source.GetIntArray());
-            BitmapViewer.Save(blured);
+            BitmapViewer.Save(sourceArray);
+            BitmapViewer.Save(sourceBlured);
+            BitmapViewer.Save(RidgeDensity(sourceBlured, 8, 16));
+            BitmapViewer.Save(interpolatedArray);
+            BitmapViewer.Save(interpolatedBlured);
             BitmapViewer.Save(_pointAngle);
             BitmapViewer.Save(_pointModule);
             BitmapViewer.Save(_areaAngle);
-
-            _res = res;
             
-            var bluredAlongRidgeDirection = BlurAlongRidgeDirection(verySource.GetIntArray(), 16, 8);
-            
+            var bluredAlongRidgeDirection = BlurAlongRidgeDirection(sourceArray, 16, 8);
             BitmapViewer.Save(bluredAlongRidgeDirection);
-            
-            FFT(bluredAlongRidgeDirection, 8, 16);
+            var tmp = FFT(bluredAlongRidgeDirection, 8, 16, res);
+            BitmapViewer.Save(tmp);
 
             Grid.SetGradientElements(_pointModule, _pointAngle);
 
@@ -65,23 +61,23 @@ namespace FPOrientField{
             Grid.Layer6 = grid.CalcQualityMeasure(new Grid.AverageModule(), 10);
             Grid.Layer7 = grid.CalcQualityMeasure(new Grid.AverageModule(), 12);
             Grid.Layer8 = grid.CalcQualityMeasure(new Grid.AverageModule(), 14);
-//                 
-//            BitmapViewer.Save(Grid.Layer1);
-//            BitmapViewer.Save(Grid.Layer2);
-//            BitmapViewer.Save(Grid.Layer3);
-//            BitmapViewer.Save(Grid.Layer4);
-//            BitmapViewer.Save(Grid.Layer5);
-//            BitmapViewer.Save(Grid.Layer6);
-//            BitmapViewer.Save(Grid.Layer7);
-//            BitmapViewer.Save(Grid.Layer8);
-//            
-//            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.CoherenceDiff(), 0));
-//            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.ModuleDiff(), 0));
+                 
+            BitmapViewer.Save(Grid.Layer1);
+            BitmapViewer.Save(Grid.Layer2);
+            BitmapViewer.Save(Grid.Layer3);
+            BitmapViewer.Save(Grid.Layer4);
+            BitmapViewer.Save(Grid.Layer5);
+            BitmapViewer.Save(Grid.Layer6);
+            BitmapViewer.Save(Grid.Layer7);
+            BitmapViewer.Save(Grid.Layer8);
+            
+            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.CoherenceDiff(), 0));
+            BitmapViewer.Save(grid.CalcQualityMeasure(new Grid.ModuleDiff(), 0));
 
-//          _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
+          _complex = grid.CalcQualityMeasure(new Grid.ComplexQuality(), 0);
 //          _threshold = grid.Threshold(_complex);
             
-          //BitmapViewer.Save(_complex);
+          BitmapViewer.Save(_complex);
 //          _qualityMeasure = grid.CalcQualityMeasureOriginalSize(new Grid.ComplexQuality(), 0);
         }
 
@@ -94,7 +90,7 @@ namespace FPOrientField{
 //        }
 
         public static byte GetDirectionAtPoint(int px, int py){
-                return AverageDirectionInArea(AllowedBorder, px, py);
+            return AverageDirectionInArea(AllowedBorder, px, py);
         }
 
         private static void CalcDirectionAtArea(int area){
@@ -121,20 +117,105 @@ namespace FPOrientField{
 
             Parallel.For(border, forBlur.GetLength(0) - border, x => {
                 for (var y = border; y < forBlur.GetLength(1) - border; y++){
-                    result[x, y] = (
-                                       forBlur[x - 2, y - 2] +
-                                       forBlur[x, y - 2] +
-                                       forBlur[x + 2, y - 2] +
-                                       forBlur[x + 2, y] +
-                                       forBlur[x + 2, y + 2] +
-                                       forBlur[x, y + 2] +
-                                       forBlur[x - 2, y + 2] +
-                                       forBlur[x - 2, y]) / 8; //4
+                    result[x, y] = (forBlur[x - 2, y - 2] +
+                                    forBlur[x, y - 2] +
+                                    forBlur[x + 2, y - 2] +
+                                    forBlur[x + 2, y] +
+                                    forBlur[x + 2, y + 2] +
+                                    forBlur[x, y + 2] +
+                                    forBlur[x - 2, y + 2] +
+                                    forBlur[x - 2, y]) / 8; //4
                 }
             });
 
             return result;
         }
+        
+        private static int[,] Blur(int[,] forBlur, int border){
+            var result = new int[forBlur.GetLength(0), forBlur.GetLength(1)];
+
+            Parallel.For(border, forBlur.GetLength(0) - border, x => {
+                for (var y = border; y < forBlur.GetLength(1) - border; y++){
+                    result[x, y] = (forBlur[x - 1, y - 1] +
+                                    forBlur[x, y - 1] +
+                                    forBlur[x + 1, y - 1] +
+                                    forBlur[x - 1, y] +
+                                    forBlur[x, y] +
+                                    forBlur[x + 1, y] +
+                                    forBlur[x - 1, y + 1] +
+                                    forBlur[x, y + 1] +
+                                    forBlur[x + 1, y + 1]) / 9;
+                }
+            });
+
+            return result;
+        }
+
+        private static double[,] RidgeDensity(int[,] forBlur, int border, int lineLength) {            
+            var result = new double[forBlur.GetLength(0), forBlur.GetLength(1)];
+
+            Parallel.For(border, forBlur.GetLength(0) - border, x => {
+                for (var y = border; y < forBlur.GetLength(1) - border; y++){  
+                    var lineCoordinates = GetLineCoordinates(x, y, Rotate90(CorrectAngle(_areaAngle[x, y])), lineLength);
+                    result[x, y] = CalcDencity(lineCoordinates);
+                }
+            });
+
+            return result;
+        }
+        
+        private static double CalcDencity(List<Coord> lineCoordinates/*, int x, int y*/){
+            var maximas = new List<int>();
+            var derivative = new List<double>();
+            
+            for (var i = 1; i < lineCoordinates.Count - 1; i++) {
+                double left = _pointModule[lineCoordinates[i - 1].GetX(), lineCoordinates[i - 1].GetY()];
+                double right = _pointModule[lineCoordinates[i + 1].GetX(), lineCoordinates[i + 1].GetY()];
+
+                derivative.Add(right-left);
+            }
+
+            for (var i = 1; i < derivative.Count - 1; i++){
+                var left = derivative[i - 1];
+                var center = derivative[i];
+                var right = derivative[i + 1];
+
+                if (center > left && center > right && center > 60){
+                    maximas.Add(i);
+                }
+            }
+
+            var divider = 0;
+
+            for (var i = 0; i < maximas.Count - 1; i++) 
+                divider += Math.Abs(maximas[i] - maximas[i + 1]);
+
+            return divider == 0 ? 0 : (double)(maximas.Count - 1) / divider;
+        }
+        
+//        private static double CalcDencity2(List<Coord> lineCoordinates){
+//            var derivative = new List<double>();
+//            var amplitude = new List<double>();
+//
+//            for (var i = 1; i < lineCoordinates.Count - 1; i++) {
+//                double left = _pointModule[lineCoordinates[i - 1].GetX(), lineCoordinates[i - 1].GetY()];
+//                double right = _pointModule[lineCoordinates[i + 1].GetX(), lineCoordinates[i + 1].GetY()];
+//
+//                derivative.Add(right-left);
+//            }
+//
+//            for (var i = 1; i < derivative.Count - 1; i++){
+//                var left = derivative[i - 1];
+//                var center = derivative[i];
+//                var right = derivative[i + 1];
+//
+//                if (center > left && center > right && center > 60){
+//                    amplitude.Add(center);
+//                }
+//            }
+//
+//            return amplitude.Count > 2 ? amplitude.Min() : 0;
+//        }
 
         /*Experimental method to find approximate gradient values near specified point*/
         private static void CalcGradientAtPoint(int[,] blured){
@@ -225,7 +306,9 @@ namespace FPOrientField{
             return result;
         }
         
-        private static void FFT(int[,] forTransform, int border, int lineLength){
+        private static int[,] FFT(int[,] forTransform, int border, int lineLength, StreamWriter res){
+            var result = new int[forTransform.GetLength(0), forTransform.GetLength(1)];
+            
             for (var x = border; x < forTransform.GetLength(0) - border; x ++){
                 for (var y = border; y < forTransform.GetLength(1) - border; y ++){
                     var lineCoordinates = GetLineCoordinates(x, y, Rotate90(CorrectAngle(_areaAngle[x, y])), lineLength);
@@ -234,40 +317,80 @@ namespace FPOrientField{
                     
                     for (var i = 0; i < lineCoordinates.Count; i++){
                         var c = lineCoordinates[i];
-                        complexes[i] = new Complex(forTransform[c.GetX(), c.GetY()], 0); 
+                        if (i == 0 || i%2 == 0) complexes[i] = new Complex(forTransform[c.GetX(), c.GetY()], 0);
+                        else complexes[i] = new Complex(-forTransform[c.GetX(), c.GetY()], 0);
                     }
                     
-                    _res.WriteLine("\nX: " + x + " Y: " + y + ". Brightness:");
+                    res.WriteLine("\nX: " + x + " Y: " + y + ". Brightness:");
 
                     foreach (var c in complexes){
-                        _res.Write(c.Re + ", ");
+                        res.Write(c.Re + ", ");
                     }
 
                     FourierTransform.FFT(complexes, FourierTransform.Direction.Forward);
                     
-                    _res.WriteLine("\nFFT:");
+                    res.WriteLine("\nFFT Real:");
                     
                     foreach (var c in complexes){
-                        _res.Write(string.Format("{0:0.00}", c.Re) + ", ");
+                        res.Write(string.Format("{0:0.00}", c.Re) + ", ");
                     }
-                    _res.WriteLine("\n------------------------------------------------");
+                    
+                    res.WriteLine("\nFFT Imaginary:");
+                    
+                    foreach (var c in complexes){
+                        res.Write(string.Format("{0:0.00}", c.Im) + ", ");
+                    }
+                    
+                    res.WriteLine("\nFFT Energy spectre:");
+                    
+                    foreach (var c in complexes){
+                        res.Write(string.Format("{0:0.00}", Math.Sqrt(c.Im * c.Im + c.Re * c.Re)) + ", ");
+                    }
+                    
+                    res.WriteLine("\nFFT Phase:");
+                    
+                    foreach (var c in complexes){
+                        res.Write(string.Format("{0:0.00}", Math.Atan2(c.Im, c.Re)) + ", ");
+                    }
+                    
+                    res.WriteLine("\nFFT Real Max & Index:");
+                    
+                    int index = 0;
+                    double max = 0.0d;
+
+                    for (int i = 1; i < complexes.Length; i++){
+                        if (complexes[i].Re > complexes[index].Re){
+                            index = i;
+                            max = complexes[i].Re;
+                        }                       
+                    }
+                    
+                    res.Write(string.Format("{0:0.00}", max) + ", ");
+                    res.Write(index);
+                    
+                    result[x, y] = (int) (2.0d * Math.PI * 9.0d * max / 16.0d);
+                    
+                    res.WriteLine("\n------------------------------------------------");
                 }
             }
+            
+            return result;
         }
-        
-        private static List<Coord> GetLineCoordinates(int x, int y, int angle, int lineLength) {
-            List<Coord> lineCoordinates;
 
-            var stopFlag = true;
+//        private static int temp(Complex[] complexes){
+//            var sumRe = complexes.Sum(c => c.Re * c.Re);
+//            var sumIm = complexes.Sum(c => c.Im * c.Im);
+//            return (int) Math.Sqrt(sumRe + sumIm);
+//        }
+
+        private static List<Coord> GetLineCoordinates(int x, int y, int angle, int lineLength) {
             var length = lineLength;
 
-            do{
-                lineCoordinates = GetSimpleLineCoordinates(x, y, angle, length);
-                if (lineCoordinates.Count >= lineLength) { stopFlag = false; }
+            for (;;){
+                var lineCoordinates = GetSimpleLineCoordinates(x, y, angle, length);
+                if (lineCoordinates.Count >= lineLength) return lineCoordinates.GetRange(0, lineLength);
                 length++;
-            } while(stopFlag);
-          
-            return lineCoordinates.GetRange(0, lineLength);
+            }
         }
 
         private static List<Coord> GetSimpleLineCoordinates(int x, int y, int angle, int lineLength) {
